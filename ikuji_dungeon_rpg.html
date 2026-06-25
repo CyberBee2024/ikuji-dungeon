@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>育児ダンジョン〜友人に会いに行こう編〜</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;}
+#app{width:100%;max-width:400px;height:100svh;display:flex;flex-direction:column;background:#000;position:relative;}
+#game-area{flex:1;overflow:hidden;position:relative;image-rendering:pixelated;}
+#game-canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
+#msg-window{
+  height:110px;min-height:110px;
+  background:#000;
+  border-top:3px solid #fff;
+  border-bottom:3px solid #fff;
+  padding:6px 10px 6px 10px;
+  position:relative;
+  flex-shrink:0;
+}
+#msg-inner{
+  border:2px solid #fff;
+  width:100%;height:100%;
+  padding:6px 8px;
+  color:#fff;
+  font-family:'Courier New',monospace;
+  font-size:13px;
+  line-height:1.6;
+  white-space:pre-wrap;
+  word-break:break-all;
+  background:#000;
+  box-sizing:border-box;
+}
+#msg-cursor{display:inline-block;width:8px;height:12px;background:#fff;animation:blink 0.6s step-end infinite;vertical-align:text-bottom;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+#dpad-area{
+  display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,44px);
+  gap:2px;padding:8px;justify-content:center;background:#111;
+  border-top:2px solid #333;flex-shrink:0;
+}
+.dbtn{
+  background:#222;border:2px solid #555;color:#fff;font-size:18px;
+  cursor:pointer;border-radius:4px;user-select:none;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  display:flex;align-items:center;justify-content:center;
+}
+.dbtn:active{background:#444;}
+.dbtn-a{background:#1a3a1a;border-color:#4caf50;font-size:12px;font-weight:700;color:#4caf50;}
+.dbtn-empty{border:none;background:transparent;}
+#hud{
+  background:#000;border-bottom:2px solid #333;
+  padding:4px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+#hud-label{color:#aaa;font-family:'Courier New',monospace;font-size:11px;white-space:nowrap;}
+#mp-bar-outer{flex:1;height:12px;background:#333;border:1.5px solid #666;border-radius:2px;overflow:hidden;}
+#mp-bar-inner{height:100%;background:#4caf50;transition:width 0.3s;border-radius:1px;}
+#hud-val{color:#fff;font-family:'Courier New',monospace;font-size:11px;min-width:52px;text-align:right;}
+#overlay{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.85);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:50;padding:20px;
+  font-family:'Courier New',monospace;
+  color:#fff;
+}
+#overlay h1{font-size:17px;text-align:center;margin-bottom:12px;line-height:1.5;color:#ff0;}
+#overlay p{font-size:12px;line-height:1.7;text-align:center;color:#ccc;margin-bottom:16px;}
+.ov-btn{
+  background:#000;border:2px solid #fff;color:#fff;
+  font-family:'Courier New',monospace;font-size:13px;font-weight:700;
+  padding:10px 24px;cursor:pointer;margin:4px;
+  width:100%;max-width:260px;
+}
+.ov-btn:hover,.ov-btn:active{background:#222;}
+.ov-btn-support{border-color:#ff9800;color:#ff9800;}
+#flash{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;opacity:0;pointer-events:none;z-index:40;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <span id="hud-label">MP</span>
+    <div id="mp-bar-outer"><div id="mp-bar-inner" style="width:100%"></div></div>
+    <span id="hud-val">100 / 100</span>
+  </div>
+  <div id="game-area">
+    <canvas id="game-canvas"></canvas>
+    <div id="flash"></div>
+  </div>
+  <div id="msg-window">
+    <div id="msg-inner"><span id="msg-text"></span><span id="msg-cursor" style="display:none"></span></div>
+  </div>
+  <div id="dpad-area">
+    <div class="dbtn-empty"></div>
+    <button class="dbtn" id="btn-up">▲</button>
+    <button class="dbtn dbtn-a" id="btn-a">決定</button>
+    <button class="dbtn" id="btn-left">◀</button>
+    <button class="dbtn" id="btn-down">▼</button>
+    <button class="dbtn" id="btn-right">▶</button>
+    <div class="dbtn-empty"></div>
+    <div class="dbtn-empty"></div>
+    <div class="dbtn-empty"></div>
+  </div>
+  <div id="overlay">
+    <h1>育児ダンジョン<br>〜友人に会いに行こう編〜</h1>
+    <p>赤ちゃんを連れて駅を越え、<br>待っている友人のもとへ向かおう！<br><br>矢印キーまたは画面ボタンで移動<br>「決定」ボタンで話しかける</p>
+    <button class="ov-btn" id="ov-start">▶ はじめる</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const TILE = 24;
+const VIEW_COLS = Math.floor(400 / TILE);
+const VIEW_ROWS = 14;
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const gameArea = document.getElementById('game-area');
+
+function resizeCanvas() {
+  const areaW = gameArea.clientWidth || 400;
+  const areaH = gameArea.clientHeight || 336;
+  const scale = Math.min(areaW / (VIEW_COLS * TILE), areaH / (VIEW_ROWS * TILE));
+  const cw = VIEW_COLS * TILE;
+  const ch = VIEW_ROWS * TILE;
+  canvas.width = cw;
+  canvas.height = ch;
+  canvas.style.width = (cw * scale) + 'px';
+  canvas.style.height = (ch * scale) + 'px';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ===== TILE TYPES =====
+const T = {
+  NONE:0,WALL:1,FLOOR:2,GATE:3,STAIR:4,ELEV_FLOOR:5,ELEV_DOOR:6,
+  PLATFORM:7,TRAIN_DOOR:8,RAIL:9,RAIL_H:10,GOAL_FLOOR:11,
+  OUTSIDE:12,TICKET:13,SIGN:14,BENCH:15,PILLAR:16
+};
+
+// ===== MAPS =====
+// Map 0: Station A Concourse (entrance → platform)
+// Map 1: Train car (moving)
+// Map 2: Station B Concourse (platform → exit → friend)
+
+const MAPS = [];
+
+// --- MAP 0: 駅A (改札→ホーム) 20x18 ---
+const M0W=20, M0H=18;
+const m0 = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,1],
+  [1,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,1],
+  [1,1,1,1,1,1,1,1,13,13,13,13,1,1,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,16,2,2,2,2,2,2,2,2,2,2,2,2,2,16,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,4,4,2,2,2,2,2,2,5,2,2,2,2,2,1],
+  [1,2,2,2,2,4,4,2,2,2,2,2,2,5,2,2,2,2,2,1],
+  [1,2,2,2,2,4,4,2,2,2,2,2,2,5,2,2,2,2,2,1],
+  [1,2,2,2,2,4,4,2,2,2,2,2,2,5,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,6,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,1,1,1,1,7,7,7,7,7,7,7,7,7,7,1,1,1,1,1],
+  [1,1,1,1,1,7,7,7,7,7,7,7,7,7,7,1,1,1,1,1],
+  [1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1],
+  [1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+MAPS.push({w:M0W,h:M0H,data:m0,
+  playerStart:{x:9,y:2},
+  mapName:'A駅 改札口',
+  npcs:[
+    {id:'ojisan1',x:3,y:5,type:'enemy',name:'おじさん',msg:['おじさんが突進してきた！','ぐいっと押しのけられた！','ママは精神的ダメージを受けた！\nMPが15減った！'],dmg:15,dir:2},
+    {id:'obasan1',x:15,y:8,type:'enemy',name:'おばさん',msg:['迷惑おばさんが睨んできた！','「もっと端に寄りなさいよ！」','ママは傷ついた…\nMPが10減った！'],dmg:10,dir:2},
+    {id:'star1',x:10,y:6,type:'heal',name:'学生',msg:['通りすがりの学生：\n「ベビーカー、一緒に持ち上げますよ！」','ママと赤ちゃんのMPが20回復した！'],heal:20,dir:0},
+    {id:'star2',x:7,y:11,type:'heal',name:'おじいさん',msg:['親切なおじいさん：\n「お子さん、可愛いですね」','心が温まった…\nMPが15回復した！'],heal:15,dir:2},
+  ],
+  staircaseTiles:[{x:5,y:7},{x:5,y:8},{x:5,y:9},{x:5,y:10},{x:6,y:7},{x:6,y:8},{x:6,y:9},{x:6,y:10}],
+  elevatorTiles:[{x:13,y:7},{x:13,y:8},{x:13,y:9},{x:13,y:10}],
+  elevatorDoor:{x:13,y:11},
+  trainDoor:{x:5,y:15,toMap:1},
+  sign:{x:9,y:4,msg:'この先　ホーム'},
+  entryMsg:'改札を抜けた。\nホームへ向かおう。\n（エレベーターで安全に移動できる）',
+});
+
+// --- MAP 1: 電車内 10x8 ---
+const M1W=10, M1H=8;
+const m1 = [
+  [1,1,1,1,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,1],
+  [1,2,15,2,2,2,2,15,2,1],
+  [1,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,1],
+  [1,2,15,2,2,2,2,15,2,1],
+  [1,2,2,2,2,2,2,2,2,1],
+  [1,1,1,1,8,8,1,1,1,1],
+];
+MAPS.push({w:M1W,h:M1H,data:m1,
+  playerStart:{x:4,y:3},
+  mapName:'満員電車',
+  npcs:[
+    {id:'packed1',x:3,y:2,type:'deco',dir:2},
+    {id:'packed2',x:6,y:5,type:'deco',dir:0},
+    {id:'packed3',x:2,y:4,type:'deco',dir:3},
+    {id:'packed4',x:7,y:3,type:'deco',dir:1},
+  ],
+  isTrain:true,
+  trainMsg:[
+    'ガタゴト…\n電車の中は満員だ。\n周囲の目が痛い…',
+    '赤ちゃんがぐずり始めた…\nMPが5減った！',
+    'ガタゴト…\nまだ着かない。\n赤ちゃんの機嫌が傾いていく…',
+    '赤ちゃんが泣き出した！\nMPが5減った！',
+    '次は○○駅、○○駅です…\nもうすぐ着く！',
+    '電車がB駅に到着した！\nドアが開いた…！',
+  ],
+  trainInterval:3000,
+  trainDmg:5,
+  onComplete:{toMap:2},
+  entryMsg:'電車に乗り込んだ。\n満員だ…息が詰まりそう。',
+});
+
+// --- MAP 2: 駅B (ホーム→改札→友人) 20x18 ---
+const M2W=20, M2H=18;
+const m2 = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,1,1,1,1,1],
+  [1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1],
+  [1,1,1,1,1,7,7,7,7,7,7,7,7,7,7,1,1,1,1,1],
+  [1,1,1,1,1,7,7,7,7,7,7,7,7,7,7,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,16,2,2,2,2,2,2,2,2,2,2,2,2,2,16,2,2,1],
+  [1,2,2,2,2,5,2,2,2,2,2,2,2,4,4,2,2,2,2,1],
+  [1,2,2,2,2,5,2,2,2,2,2,2,2,4,4,2,2,2,2,1],
+  [1,2,2,2,2,5,2,2,2,2,2,2,2,4,4,2,2,2,2,1],
+  [1,2,2,2,2,6,2,2,2,2,2,2,2,4,4,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,1,1,1,1,1,1,1,13,13,13,13,1,1,1,1,1,1,1,1],
+  [1,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,1],
+  [1,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,1],
+  [1,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+]);
+MAPS.push({w:M2W,h:M2H,data:m2,
+  playerStart:{x:9,y:3},
+  mapName:'B駅 到着',
+  npcs:[
+    {id:'ojisan2',x:12,y:6,type:'enemy',name:'おじさん',msg:['おじさんが行く手を塞いだ！','どかそうとしたが…','ぐいっと押されてしまった！\nMPが15減った！'],dmg:15,dir:2},
+    {id:'star3',x:3,y:11,type:'heal',name:'女性',msg:['優しそうな女性：\n「赤ちゃん、よく頑張ったね！」','赤ちゃんがにっこり笑った！\nMPが20回復した！'],heal:20,dir:1},
+    {id:'friend',x:10,y:15,type:'friend',name:'友人',
+      msg:['友人：「来てくれたの！？\nずっと待ってたよ〜！」','友人：「赤ちゃんも大きくなったね！\nさあ、ゆっくりお茶しよ！」'],
+      dir:0,isGoal:true},
+  ],
+  staircaseTiles:[{x:13,y:7},{x:13,y:8},{x:13,y:9},{x:13,y:10},{x:14,y:7},{x:14,y:8},{x:14,y:9},{x:14,y:10}],
+  elevatorTiles:[{x:5,y:7},{x:5,y:8},{x:5,y:9}],
+  elevatorDoor:{x:5,y:10},
+  entryMsg:'B駅に着いた！\nあとは改札を出れば\n友人が待っているはずだ！',
+  sign:{x:9,y:13,msg:'出口'},
+});
+
+// ===== GAME STATE =====
+let state = {
+  phase:'title',
+  mapIdx:0,
+  px:0,py:0,
+  mp:100,maxMp:100,
+  camX:0,camY:0,
+  facing:0,
+  moving:false,
+  inputLocked:false,
+  trainPhase:0,
+  trainTimer:null,
+  defeatedNpcs:{},
+  msgQueue:[],
+  msgTyping:false,
+  msgDone:false,
+  msgCallback:null,
+};
+
+function curMap(){return MAPS[state.mapIdx];}
+
+// ===== DRAWING =====
+const COLORS = {
+  floor:'#c8b89a',
+  floor2:'#bfaf92',
+  wall:'#3a2e1e',
+  wallTop:'#5a4030',
+  outside:'#6a9b6a',
+  platform:'#888898',
+  platform2:'#797988',
+  rail:'#555060',
+  trainDoor:'#4488cc',
+  trainDoorOpen:'#88ccff',
+  stair:'#a0896a',
+  stairLine:'#7a6045',
+  elev:'#9090c8',
+  elevDoor:'#c0c0e8',
+  goalFloor:'#d4c87a',
+  pillar:'#8a7a60',
+  bench:'#7a5030',
+  ticket:'#445566',
+  sign:'#335544',
+};
+
+function drawTile(tx,ty,tid,mx,my){
+  const sx=tx*TILE,sy=ty*TILE;
+  ctx.save();
+  switch(tid){
+    case T.FLOOR:
+      ctx.fillStyle=(tx+ty)%2===0?COLORS.floor:COLORS.floor2;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      break;
+    case T.WALL:
+      ctx.fillStyle=COLORS.wall;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle=COLORS.wallTop;
+      ctx.fillRect(sx,sy,TILE,6);
+      break;
+    case T.OUTSIDE:
+      ctx.fillStyle='#5a8a5a';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      for(let i=0;i<6;i++){
+        ctx.fillStyle=i%2===0?'#4a7a4a':'#6aaa6a';
+        ctx.fillRect(sx+(i*4),sy,4,TILE);
+      }
+      break;
+    case T.TICKET:
+      ctx.fillStyle='#445566';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#88aacc';
+      ctx.fillRect(sx+3,sy+3,TILE-6,TILE-6);
+      ctx.fillStyle='#fff';
+      ctx.fillRect(sx+6,sy+6,TILE-12,TILE-12);
+      break;
+    case T.PLATFORM:
+      ctx.fillStyle=(tx+ty)%2===0?COLORS.platform:COLORS.platform2;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#ffff00';
+      ctx.fillRect(sx,sy+TILE-4,TILE,2);
+      break;
+    case T.TRAIN_DOOR:
+      ctx.fillStyle='#2255aa';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#4488ff';
+      ctx.fillRect(sx+2,sy+2,TILE-4,TILE-4);
+      ctx.fillStyle='#aaccff';
+      ctx.fillRect(sx+TILE/2-1,sy+2,2,TILE-4);
+      break;
+    case T.RAIL:
+      ctx.fillStyle='#333';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#666';
+      ctx.fillRect(sx,sy+8,TILE,4);
+      ctx.fillStyle='#888';
+      ctx.fillRect(sx+4,sy+4,4,TILE-8);
+      ctx.fillRect(sx+TILE-8,sy+4,4,TILE-8);
+      break;
+    case T.RAIL_H:
+      ctx.fillStyle='#333';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#666';
+      ctx.fillRect(sx+8,sy,4,TILE);
+      ctx.fillStyle='#888';
+      ctx.fillRect(sx+4,sy+4,TILE-8,4);
+      ctx.fillRect(sx+4,sy+TILE-8,TILE-8,4);
+      break;
+    case T.STAIR:
+      ctx.fillStyle=COLORS.stair;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle=COLORS.stairLine;
+      for(let i=0;i<4;i++){
+        ctx.fillRect(sx,sy+i*6,TILE,3);
+      }
+      ctx.fillStyle='#cc4444';
+      ctx.font='bold 10px monospace';
+      ctx.fillText('X',sx+TILE/2-4,sy+TILE/2+4);
+      break;
+    case T.ELEV_FLOOR:
+      ctx.fillStyle='#7070b0';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#a0a0e0';
+      ctx.fillRect(sx+3,sy+3,TILE-6,TILE-6);
+      break;
+    case T.ELEV_DOOR:
+      ctx.fillStyle='#9090c8';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#c8c8ff';
+      ctx.fillRect(sx+3,sy+2,TILE-6,TILE-4);
+      ctx.fillStyle='#8888cc';
+      ctx.fillRect(sx+TILE/2-1,sy+2,2,TILE-4);
+      break;
+    case T.GOAL_FLOOR:
+      ctx.fillStyle=(tx+ty)%2===0?'#d4c87a':'#c8bb6e';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      break;
+    case T.GATE:
+      ctx.fillStyle=COLORS.ticket;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#3388cc';
+      ctx.fillRect(sx+4,sy+4,TILE-8,TILE-8);
+      break;
+    case T.PILLAR:
+      ctx.fillStyle=COLORS.floor;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#7a6a50';
+      ctx.fillRect(sx+6,sy+2,TILE-12,TILE-4);
+      ctx.fillStyle='#5a4a30';
+      ctx.fillRect(sx+8,sy+4,TILE-16,TILE-8);
+      break;
+    case T.BENCH:
+      ctx.fillStyle=COLORS.floor;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#7a5030';
+      ctx.fillRect(sx+2,sy+10,TILE-4,6);
+      ctx.fillStyle='#5a3820';
+      ctx.fillRect(sx+4,sy+8,4,8);
+      ctx.fillRect(sx+TILE-8,sy+8,4,8);
+      break;
+    case T.SIGN:
+      ctx.fillStyle=COLORS.floor;
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.fillStyle='#335544';
+      ctx.fillRect(sx+2,sy+4,TILE-4,10);
+      ctx.fillStyle='#88cc88';
+      ctx.font='7px monospace';
+      ctx.fillText('案内',sx+3,sy+12);
+      break;
+    default:
+      ctx.fillStyle='#1a1a2a';
+      ctx.fillRect(sx,sy,TILE,TILE);
+  }
+  ctx.restore();
+}
+
+function drawChar(sx,sy,type,facing,anim){
+  ctx.save();
+  const f=anim?Math.floor(Date.now()/300)%2:0;
+  const bodyY=f?1:0;
+
+  if(type==='player'){
+    // Buggy body
+    ctx.fillStyle='#4488cc';
+    ctx.fillRect(sx+5,sy+10+bodyY,14,8);
+    ctx.fillStyle='#2255aa';
+    ctx.fillRect(sx+4,sy+8+bodyY,16,4);
+    // handle
+    ctx.fillStyle='#888';
+    ctx.fillRect(sx+16,sy+4+bodyY,2,8);
+    // wheels
+    ctx.fillStyle='#222';
+    ctx.beginPath();ctx.arc(sx+8,sy+20,3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(sx+16,sy+20,3,0,Math.PI*2);ctx.fill();
+    // baby face
+    ctx.fillStyle='#f5cfa0';
+    ctx.fillRect(sx+7,sy+4+bodyY,10,8);
+    ctx.fillStyle='#222';
+    if(facing===0){ctx.fillRect(sx+9,sy+6+bodyY,2,2);ctx.fillRect(sx+13,sy+6+bodyY,2,2);}
+    else if(facing===2){ctx.fillRect(sx+9,sy+8+bodyY,2,2);ctx.fillRect(sx+13,sy+8+bodyY,2,2);}
+    // mama silhouette above
+    ctx.fillStyle='#cc7766';
+    ctx.fillRect(sx+12,sy+bodyY,6,8);
+    ctx.fillStyle='#f5cfa0';
+    ctx.beginPath();ctx.arc(sx+15,sy-1+bodyY,4,0,Math.PI*2);ctx.fill();
+  }
+  else if(type==='enemy'){
+    ctx.fillStyle='#555';
+    ctx.fillRect(sx+6,sy+12+bodyY,12,10);
+    ctx.fillStyle='#f5cfa0';
+    ctx.beginPath();ctx.arc(sx+12,sy+8+bodyY,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#333';
+    ctx.fillRect(sx+8,sy+2+bodyY,8,6);
+    ctx.fillStyle='#e00';
+    ctx.fillRect(sx+9,sy+8+bodyY,2,2);
+    ctx.fillRect(sx+13,sy+8+bodyY,2,2);
+    ctx.fillRect(sx+9,sy+12+bodyY,6,2);
+  }
+  else if(type==='heal'){
+    ctx.fillStyle='#334488';
+    ctx.fillRect(sx+6,sy+12+bodyY,12,10);
+    ctx.fillStyle='#f5cfa0';
+    ctx.beginPath();ctx.arc(sx+12,sy+8+bodyY,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffe066';
+    ctx.fillRect(sx+4,sy+2+bodyY,16,5);
+    ctx.fillStyle='#4caf50';
+    ctx.fillRect(sx+9,sy+7+bodyY,2,2);
+    ctx.fillRect(sx+13,sy+7+bodyY,2,2);
+    ctx.fillRect(sx+9,sy+11+bodyY,6,2);
+  }
+  else if(type==='friend'){
+    ctx.fillStyle='#cc4488';
+    ctx.fillRect(sx+6,sy+12+bodyY,12,10);
+    ctx.fillStyle='#f5cfa0';
+    ctx.beginPath();ctx.arc(sx+12,sy+8+bodyY,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#cc3300';
+    ctx.fillRect(sx+6,sy+2+bodyY,12,6);
+    ctx.fillRect(sx+4,sy+3+bodyY,4,5);
+    ctx.fillRect(sx+16,sy+3+bodyY,4,5);
+    ctx.fillStyle='#cc4488';
+    ctx.fillRect(sx+9,sy+8+bodyY,2,1);
+    ctx.fillRect(sx+13,sy+8+bodyY,2,1);
+    ctx.fillStyle='#f08090';
+    ctx.fillRect(sx+9,sy+12+bodyY,6,2);
+  }
+  else if(type==='deco'){
+    ctx.fillStyle='#666';
+    ctx.fillRect(sx+6,sy+12+bodyY,12,10);
+    ctx.fillStyle='#e5bf9a';
+    ctx.beginPath();ctx.arc(sx+12,sy+8+bodyY,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#555';
+    ctx.fillRect(sx+9,sy+7+bodyY,2,2);
+    ctx.fillRect(sx+13,sy+7+bodyY,2,2);
+    ctx.fillRect(sx+9,sy+11+bodyY,6,2);
+  }
+  ctx.restore();
+}
+
+function getCam(){
+  const map=curMap();
+  let camX=state.px-Math.floor(VIEW_COLS/2);
+  let camY=state.py-Math.floor(VIEW_ROWS/2);
+  camX=Math.max(0,Math.min(map.w-VIEW_COLS,camX));
+  camY=Math.max(0,Math.min(map.h-VIEW_ROWS,camY));
+  return{camX,camY};
+}
+
+function render(){
+  const map=curMap();
+  const{camX,camY}=getCam();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for(let ty=0;ty<VIEW_ROWS;ty++){
+    for(let tx=0;tx<VIEW_COLS;tx++){
+      const mx=tx+camX,my=ty+camY;
+      if(mx<0||mx>=map.w||my<0||my>=map.h){
+        ctx.fillStyle='#1a1a1a';ctx.fillRect(tx*TILE,ty*TILE,TILE,TILE);
+        continue;
+      }
+      drawTile(tx,ty,map.data[my][mx],mx,my);
+    }
+  }
+
+  const map2=curMap();
+  (map2.npcs||[]).forEach(npc=>{
+    if(state.defeatedNpcs[npc.id]) return;
+    const tx=npc.x-camX,ty=npc.y-camY;
+    if(tx<0||tx>=VIEW_COLS||ty<0||ty>=VIEW_ROWS) return;
+    drawChar(tx*TILE,ty*TILE,npc.type,npc.dir,true);
+  });
+
+  const px2=state.px-camX,py2=state.py-camY;
+  drawChar(px2*TILE,py2*TILE,'player',state.facing,state.moving);
+
+  // map name overlay
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.fillRect(0,0,canvas.width,16);
+  ctx.fillStyle='#ffff88';
+  ctx.font='10px monospace';
+  ctx.fillText(map.mapName,4,11);
+}
+
+// ===== MESSAGE SYSTEM =====
+const msgText=document.getElementById('msg-text');
+const msgCursor=document.getElementById('msg-cursor');
+let typeTimer=null;
+
+function typeMsg(text, onDone){
+  if(typeTimer) clearTimeout(typeTimer);
+  msgText.textContent='';
+  msgCursor.style.display='inline-block';
+  state.msgTyping=true;
+  state.msgDone=false;
+  let i=0;
+  function step(){
+    if(i<text.length){
+      msgText.textContent+=text[i++];
+      typeTimer=setTimeout(step,30);
+    } else {
+      state.msgTyping=false;
+      state.msgDone=true;
+      if(onDone) onDone();
+    }
+  }
+  step();
+}
+
+function clearMsg(){
+  if(typeTimer) clearTimeout(typeTimer);
+  msgText.textContent='';
+  msgCursor.style.display='none';
+  state.msgTyping=false;
+  state.msgDone=false;
+}
+
+function showMsgQueue(msgs, onAllDone){
+  if(!msgs||msgs.length===0){if(onAllDone)onAllDone();return;}
+  let idx=0;
+  function showNext(){
+    if(idx>=msgs.length){
+      msgCursor.style.display='none';
+      if(onAllDone) onAllDone();
+      return;
+    }
+    typeMsg(msgs[idx], ()=>{
+      idx++;
+      if(idx<msgs.length){
+        msgCursor.style.display='inline-block';
+        state.msgDone=true;
+        state.msgCallback=showNext;
+      } else {
+        msgCursor.style.display='none';
+        if(onAllDone) onAllDone();
+      }
+    });
+  }
+  showNext();
+}
+
+// ===== MP =====
+function updateMPUI(){
+  const pct=state.mp/state.maxMp*100;
+  document.getElementById('mp-bar-inner').style.width=pct+'%';
+  document.getElementById('mp-bar-inner').style.background=pct>50?'#4caf50':pct>25?'#ff9800':'#f44336';
+  document.getElementById('hud-val').textContent=state.mp+' / '+state.maxMp;
+}
+function changeMP(delta){
+  state.mp=Math.max(0,Math.min(state.maxMp,state.mp+delta));
+  updateMPUI();
+  if(state.mp<=0) setTimeout(()=>endGame('over'),800);
+}
+
+// ===== FLASH =====
+function flashScreen(color,cb){
+  const el=document.getElementById('flash');
+  el.style.background=color||'#fff';
+  el.style.opacity='0.85';
+  setTimeout(()=>{el.style.opacity='0';if(cb)cb();},200);
+}
+
+// ===== MAP TRANSITION =====
+function loadMap(idx, px, py, entryMsg){
+  state.mapIdx=idx;
+  state.px=px;state.py=py;
+  state.moving=false;state.inputLocked=false;
+  state.facing=0;
+  render();
+  if(entryMsg){
+    state.inputLocked=true;
+    showMsgQueue([entryMsg],()=>{state.inputLocked=false;});
+  }
+}
+
+// ===== TRAIN EVENT =====
+function startTrainEvent(){
+  state.inputLocked=true;
+  const map=curMap();
+  let phase=0;
+  const msgs=map.trainMsg;
+  function tick(){
+    if(phase>=msgs.length){
+      // Arrive
+      showMsgQueue(['次の駅に到着した！\nドアが開く…'],()=>{
+        clearTrainTimer();
+        setTimeout(()=>loadMap(2,9,3,MAPS[2].entryMsg),500);
+      });
+      return;
+    }
+    const m=msgs[phase];
+    const isDmg=m.includes('MP');
+    if(isDmg) changeMP(-map.trainDmg);
+    showMsgQueue([m],()=>{
+      phase++;
+      if(state.mp>0) state.trainTimer=setTimeout(tick,map.trainInterval);
+    });
+  }
+  state.trainTimer=setTimeout(tick,500);
+}
+function clearTrainTimer(){
+  if(state.trainTimer){clearTimeout(state.trainTimer);state.trainTimer=null;}
+}
+
+// ===== MOVEMENT =====
+function isPassable(mx,my){
+  const map=curMap();
+  if(mx<0||mx>=map.w||my<0||my>=map.h) return false;
+  const t=map.data[my][mx];
+  if(t===T.WALL||t===T.NONE||t===T.RAIL||t===T.RAIL_H) return false;
+  if(t===T.STAIR) return false;
+  return true;
+}
+
+function tryMove(dx,dy){
+  if(state.inputLocked||state.msgTyping) return;
+  if(state.msgDone&&state.msgCallback){
+    const cb=state.msgCallback;
+    state.msgCallback=null;
+    state.msgDone=false;
+    cb();
+    return;
+  }
+  if(state.msgDone){
+    clearMsg();
+    state.msgDone=false;
+    return;
+  }
+
+  if(dx===0&&dy===0) return;
+  const facing=dx<0?3:dx>0?1:dy<0?0:2;
+  state.facing=facing;
+
+  const nx=state.px+dx, ny=state.py+dy;
+
+  if(!isPassable(nx,ny)){
+    const map=curMap();
+    if(map.data[ny]&&map.data[ny][nx]===T.STAIR){
+      showMsgQueue(['階段はベビーカーでは\n通れない！\nエレベーターを探そう。'],()=>{clearMsg();});
+    }
+    render();
+    return;
+  }
+
+  const map=curMap();
+  // Check NPC collision
+  const npc=(map.npcs||[]).find(n=>n.x===nx&&n.y===ny&&!state.defeatedNpcs[n.id]);
+  if(npc){
+    triggerNPC(npc);
+    render();
+    return;
+  }
+
+  state.px=nx;state.py=ny;
+  state.moving=true;
+  setTimeout(()=>{state.moving=false;},200);
+
+  // Tile events
+  const tile=map.data[ny][nx];
+  if(tile===T.TRAIN_DOOR&&map.trainDoor){
+    state.inputLocked=true;
+    showMsgQueue(['電車に乗り込んだ。\n満員だ…息が詰まりそう。'],()=>{
+      loadMap(1,4,3,null);
+      startTrainEvent();
+    });
+    return;
+  }
+  if(tile===T.ELEV_DOOR||tile===T.ELEV_FLOOR){
+    showMsgQueue(['エレベーターで安全に\n移動できた。'],()=>{clearMsg();});
+  }
+  if(tile===T.GOAL_FLOOR&&!state.defeatedNpcs['friend']){
+    // near friend?
+  }
+
+  render();
+}
+
+function triggerNPC(npc){
+  state.inputLocked=true;
+  if(npc.type==='enemy'){
+    flashScreen('#f44',()=>{});
+    showMsgQueue(npc.msg,()=>{
+      changeMP(-npc.dmg);
+      state.defeatedNpcs[npc.id]=true;
+      state.inputLocked=false;
+      clearMsg();
+    });
+  } else if(npc.type==='heal'){
+    flashScreen('#4f4',()=>{});
+    showMsgQueue(npc.msg,()=>{
+      changeMP(npc.heal);
+      state.defeatedNpcs[npc.id]=true;
+      state.inputLocked=false;
+      clearMsg();
+    });
+  } else if(npc.isGoal){
+    showMsgQueue(npc.msg,()=>{
+      state.defeatedNpcs[npc.id]=true;
+      state.inputLocked=false;
+      clearMsg();
+      setTimeout(()=>endGame('clear'),600);
+    });
+  } else {
+    state.inputLocked=false;
+  }
+}
+
+function talkFacing(){
+  if(state.inputLocked) return;
+  if(state.msgDone&&state.msgCallback){
+    const cb=state.msgCallback;
+    state.msgCallback=null;
+    state.msgDone=false;
+    cb();
+    return;
+  }
+  if(state.msgDone){clearMsg();state.msgDone=false;return;}
+  const dx2=[0,1,0,-1][state.facing];
+  const dy2=[-1,0,1,0][state.facing];
+  const tx=state.px+dx2,ty=state.py+dy2;
+  const map=curMap();
+  const npc=(map.npcs||[]).find(n=>n.x===tx&&n.y===ty&&!state.defeatedNpcs[n.id]);
+  if(npc) triggerNPC(npc);
+  else {
+    const msg=map.sign&&map.sign.x===tx&&map.sign.y===ty?[map.sign.msg]:null;
+    if(msg) showMsgQueue(msg,()=>{clearMsg();});
+  }
+}
+
+// ===== END GAME =====
+function endGame(result){
+  clearTrainTimer();
+  state.phase=result;
+  const ov=document.getElementById('overlay');
+  ov.innerHTML='';
+  const isWin=result==='clear';
+  const h1=document.createElement('h1');
+  h1.style.color=isWin?'#ffff44':'#ff4444';
+  h1.textContent=isWin?'クリア！友人に会えた！':'力尽きてしまった…';
+  const p=document.createElement('p');
+  p.innerHTML=isWin
+    ?'無事にB駅までたどり着き、<br>友人と再会することができた！<br>本当によく頑張りました！'
+    :'MPがゼロになってしまった…<br>育児は想像以上に大変。<br>でも、また立ち上がれる！';
+  const b1=document.createElement('button');
+  b1.className='ov-btn';
+  b1.textContent='▶ もう一度';
+  b1.onclick=()=>{ov.style.display='none';startGame();};
+  const b2=document.createElement('button');
+  b2.className='ov-btn ov-btn-support';
+  b2.textContent='📱 アプリ版の応援（制作支援）はこちら！';
+  b2.onclick=()=>alert('アプリ版は現在制作中です！\n応援ありがとうございます🙏');
+  ov.append(h1,p,b1,b2);
+  ov.style.display='flex';
+}
+
+// ===== START =====
+function startGame(){
+  clearTrainTimer();
+  clearMsg();
+  state={
+    phase:'playing',
+    mapIdx:0,
+    px:MAPS[0].playerStart.x,
+    py:MAPS[0].playerStart.y,
+    mp:100,maxMp:100,
+    camX:0,camY:0,
+    facing:0,
+    moving:false,
+    inputLocked:false,
+    trainPhase:0,
+    trainTimer:null,
+    defeatedNpcs:{},
+    msgQueue:[],
+    msgTyping:false,
+    msgDone:false,
+    msgCallback:null,
+  };
+  updateMPUI();
+  render();
+  state.inputLocked=true;
+  showMsgQueue([MAPS[0].entryMsg],()=>{state.inputLocked=false;clearMsg();});
+}
+
+// ===== INPUT =====
+document.getElementById('btn-up').addEventListener('click',()=>tryMove(0,-1));
+document.getElementById('btn-down').addEventListener('click',()=>tryMove(0,1));
+document.getElementById('btn-left').addEventListener('click',()=>tryMove(-1,0));
+document.getElementById('btn-right').addEventListener('click',()=>tryMove(1,0));
+document.getElementById('btn-a').addEventListener('click',()=>talkFacing());
+
+['btn-up','btn-down','btn-left','btn-right','btn-a'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();el.click();},{passive:false});
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'||e.key==='w'){e.preventDefault();tryMove(0,-1);}
+  else if(e.key==='ArrowDown'||e.key==='s'){e.preventDefault();tryMove(0,1);}
+  else if(e.key==='ArrowLeft'||e.key==='a'){e.preventDefault();tryMove(-1,0);}
+  else if(e.key==='ArrowRight'||e.key==='d'){e.preventDefault();tryMove(1,0);}
+  else if(e.key==='Enter'||e.key===' '||e.key==='z'){e.preventDefault();talkFacing();}
+});
+
+// render loop
+function loop(){
+  if(state.phase==='playing'||state.phase==='title') render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// Start button
+document.getElementById('ov-start').addEventListener('click',()=>{
+  document.getElementById('overlay').style.display='none';
+  startGame();
+});
+
+// init render
+render();
+})();
+</script>
+</body>
+</html>
