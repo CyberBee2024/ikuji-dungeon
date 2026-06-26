@@ -882,7 +882,7 @@ function triggerNPC(npc){
       "mys_c5":{hp:15,  msg:"「段差あるから、ベビーカー持ち上げますね！」\n若い人が走って来てくれた。\n温かくてMPが15回復した！"},
 
       // MAP_PLATFORMホーム: ランダム（登場はおまけ扱い）
-      "mys_p1":{dmg:10, msg:"「母乳？ミルク？」\n…なんで他人のあなたに報告しないといけないの。\nMPが10減った！"},
+      "mys_p1":{dmg:8, msg:"「母乳？ミルク？」\n不意の質問に、思わず「ミルクです」と答えてしまった！\n他人にプライベートな情報を開示。MPが8減少した。"},
       "mys_p2":{hp:10,  msg:"「赤ちゃんかわいいね、何ヶ月？」\nなんか救われた。\nMPが10回復した！"},
       "mys_p3":{dmg:8,  msg:"「赤ちゃん、ママに全然似てないね〜！」\n悪意はないんだろうけど…\nじわじわMPが8減った！"},
 
@@ -950,9 +950,33 @@ function startTrain(){
     }
     var m=msgs[phase];
     if(m.indexOf("MP")>=0) changeMP(-map.trainDmg);
+    // 「赤ちゃんが泣き出した」のとき泣き声エフェクト
+    if(phase===3) startCryEffect();
     showMsgs([m],function(){phase++;if(G.mp>0)G.trainTimer=setTimeout(tick,2800);});
   }
   G.trainTimer=setTimeout(tick,400);
+}
+
+// 泣き声エフェクト — 青白い波紋が広がる
+var cryRipples=[];
+function startCryEffect(){
+  // 青フラッシュ
+  flashEl.style.background="#ff4444";
+  flashEl.style.transition="none";
+  flashEl.style.opacity="0.6";
+  setTimeout(function(){
+    flashEl.style.transition="opacity 0.5s";
+    flashEl.style.opacity="0";
+  }, 80);
+  // 波紋を3発
+  var cx=canvas.width/2, cy=canvas.height/2;
+  for(var i=0;i<3;i++){
+    (function(delay){
+      setTimeout(function(){
+        cryRipples.push({x:cx,y:cy,r:0,maxR:Math.max(canvas.width,canvas.height)*0.7,life:1.0});
+      }, delay);
+    })(i*120);
+  }
 }
 
 // ===================================================================
@@ -1224,9 +1248,7 @@ function endGame(result){
     overlayEl.appendChild(h1);overlayEl.appendChild(p);overlayEl.appendChild(b1);
     overlayEl.appendChild(xBtn);overlayEl.appendChild(igBtn);
   } else {
-    var ln=document.createElement("div");ln.className="like-note";
-    ln.innerHTML="クリアしてXやInstagramでシェアしよう！";
-    overlayEl.appendChild(h1);overlayEl.appendChild(p);overlayEl.appendChild(b1);overlayEl.appendChild(ln);
+    overlayEl.appendChild(h1);overlayEl.appendChild(p);overlayEl.appendChild(b1);
   }
 }
 
@@ -1283,7 +1305,30 @@ document.getElementById("ov-start").addEventListener("click",function(){
 // LOOP
 // ===================================================================
 function loop(){
-  if(G.phase==="playing"){render();updateSparkles();}
+  if(G.phase==="playing"){
+    render();
+    updateSparkles();
+    // 泣き声波紋エフェクト
+    if(cryRipples.length>0){
+      var alive=[];
+      for(var i=0;i<cryRipples.length;i++){
+        var rp=cryRipples[i];
+        rp.r+=6; rp.life-=0.03;
+        if(rp.life>0){
+          ctx.save();
+          ctx.globalAlpha=rp.life*0.5;
+          ctx.strokeStyle="#ff6666";
+          ctx.lineWidth=3;
+          ctx.beginPath();
+          ctx.arc(rp.x,rp.y,rp.r,0,Math.PI*2);
+          ctx.stroke();
+          ctx.restore();
+          alive.push(rp);
+        }
+      }
+      cryRipples=alive;
+    }
+  }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
