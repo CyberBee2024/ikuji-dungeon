@@ -92,8 +92,8 @@ var MAP0={
   entry:"海老反駅行きに乗るぞ。\nまず改札を通らないと。",
   data:[
     //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
-    [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], // y=0 外(スタート)
-    [ 0, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 0], // y=1 改札列
+    [ 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0], // y=0 外(スタート)
+    [ 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0], // y=1 改札列
     [ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], // y=2
     [ 0, 1,11, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,11, 1, 1, 0], // y=3
     [ 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], // y=4
@@ -111,10 +111,10 @@ var MAP0={
   elevX:12, elevY:9, elevToMap:"PLATFORM",
   npcs:[
     {id:"oji1",x:3,y:4,type:"enemy",dmg:20,
-     msg:["前の人が突進してきた！","ぐいっと押しのけられた！","ママは精神的ダメージを受けた！\nMPが20減った！"]},
+     msg:["前の人がいきなりUターンしてきた！\nぐいっと押しのけられ、MPが20減った！"]},
     {id:"gaku1",x:14,y:4,type:"heal",hp:10,
-     msg:["通りすがりの学生：\n「ベビーカー、一緒に持ち上げますよ！」","ママと赤ちゃんのMPが10回復した！"]},
-    {id:"mys_c1",x:8,y:5,type:"mystery"},
+     msg:["「ベビーカーから何か落ちましたよ！」\n学生がおもちゃをひろってくれた！MPが10回復した！"]},
+    {id:"mys_c1",x:13,y:11,type:"mystery"},
     {id:"mys_c2",x:6,y:9,type:"mystery"},
     {id:"mys_c3",x:15,y:7,type:"mystery"},
     {id:"mys_c4",x:4,y:12,type:"mystery"},
@@ -158,9 +158,9 @@ var MAP_PLATFORM={
   isPlatform:true,
   npcs:[
     {id:"oba_p",x:16,y:6,type:"enemy",dmg:18,
-     msg:["近くの人が睨んできた！","「もっと端に寄りなさいよ！」","ママは深く傷ついた…\nMPが18減った！"]},
+     msg:["近くの人に「もっと端に寄りなさいよ！」\nと睨まれた。MPが18減った！"]},
     {id:"jk_p",x:7,y:6,type:"heal",hp:10,
-     msg:["女子高生：\n「赤ちゃんかわいい〜！\nがんばってください！」","元気づけられた！\nMPが10回復した！"]},
+     msg:["「赤ちゃんかわいい〜！がんばってください！」\n高校生に声をかけられて元気が出た！\nMPが10回復した！"]},
     {id:"mys_p1",x:3,y:5,type:"mystery"},
     {id:"mys_p2",x:10,y:7,type:"mystery"},
     {id:"mys_p3",x:14,y:5,type:"mystery"}
@@ -203,7 +203,7 @@ var MAP1={
     {id:"p5", x:5, y:2,type:"deco"},{id:"p6", x:6, y:2,type:"deco"},
     {id:"p7", x:7, y:2,type:"deco"},{id:"p8", x:8, y:2,type:"deco"},
     {id:"p9", x:9, y:2,type:"deco"},{id:"p10",x:10,y:2,type:"deco"},
-    {id:"p11",x:11,y:2,type:"deco"},
+    {id:"p11",x:11,y:2,type:"deco"},{id:"p11b",x:12,y:2,type:"deco"},
     // 優先席(y=2, 右端)
     {id:"pr1",x:13,y:2,type:"deco"},{id:"pr2",x:14,y:2,type:"deco"},
     // 立っている乗客(y=3,4,5)
@@ -217,8 +217,10 @@ var MAP1={
     {id:"p24",x:1, y:6,type:"deco"},{id:"p25",x:2, y:6,type:"deco"},
     {id:"p26",x:3, y:6,type:"deco"},{id:"p27",x:4, y:6,type:"deco"},
     {id:"p28",x:5, y:6,type:"deco"},{id:"p29",x:6, y:6,type:"deco"},
+    {id:"p29b",x:7, y:6,type:"deco"},
     {id:"p30",x:8, y:6,type:"deco"},{id:"p31",x:9, y:6,type:"deco"},
     {id:"p32",x:10,y:6,type:"deco"},{id:"p33",x:11,y:6,type:"deco"},
+    {id:"p33b",x:12,y:6,type:"deco"},
     // 優先席(y=6, 右端)
     {id:"pr3",x:13,y:6,type:"deco"},{id:"pr4",x:14,y:6,type:"deco"}
   ]
@@ -253,9 +255,9 @@ var MAP2={
   elevX:5,elevY:9,elevToMap:null,
   npcs:[
     {id:"oji2",x:12,y:5,type:"enemy",dmg:20,
-     msg:["前の人が行く手を塞いだ！","どかそうとしたが…","ぐいっと押された！\nMPが20減った！"]},
+     msg:["前の人が急に立ち止まり行く手を塞いだ！\nぐいっと押された。MPが20減った！"]},
     {id:"joshi1",x:3,y:10,type:"heal",hp:10,
-     msg:["優しそうな女性：\n「赤ちゃん、よく頑張ったね！」","赤ちゃんがにっこり笑った！\nMPが10回復した！"]},
+     msg:["「赤ちゃん、よく頑張ったね！」\n優しい言葉に赤ちゃんがにっこり笑った！\nMPが10回復した！"]},
     {id:"mys_b1",x:8,y:10,type:"mystery"},
     {id:"mys_b2",x:15,y:10,type:"mystery"},
     {id:"mys_b3",x:6,y:7,type:"mystery"},
@@ -285,7 +287,8 @@ var G={
   trainUsed:false,
   elevQueueDone:0,      // 0=誰も消えていない 1=eq1消えた 2=eq2消えた 3=全員消えた
   elevWaitTimer:null,   // eq2消えた後の強制MP減少タイマー
-  rushDone:false        // 海老反駅の突進イベント（一回のみ）
+  rushDone:false,       // 海老反駅の突進イベント（一回のみ）
+  elevWaited:false      // エレベーター初乗り時の待機演出（一回のみ）
 };
 
 function curMap(){return MAPS[G.mapKey];}
@@ -867,31 +870,38 @@ function triggerNPC(npc){
     return;
   }
 
-  // ランダム謎の人物 — 話しかけた瞬間に heal か enemy をランダム決定
+  // 謎の人物 — NPC IDごとに内容を完全固定（重複・ランダムなし）
   if(npc.type==="mystery"){
-    var MYSTERY_HEAL=[
-      ["通りがかりの人：\n「あ、赤ちゃん！かわいいですね〜」","なんか元気が出てきた！\nMPが12回復した！"],
-      ["通行人：\n「ベビーカー、手伝いましょうか？」","親切にされて嬉しかった！\nMPが10回復した！"],
-      ["通りすがりの人：\n「うちの子も小さい頃こんなだったわ」","懐かしそうな笑顔に癒された。\nMPが12回復した！"],
-      ["女の子：\n「赤ちゃんにばいばいしてもいいですか？」","赤ちゃんが笑い返した！\nMPが15回復した！"]
-    ];
-    var MYSTERY_ENEMY=[
-      ["謎の人物が話しかけてきた…","「あら、赤ちゃん寒そうだね。\nかわいそう〜」","…余計なお世話だ！\nじわじわとMPが12減った…"],
-      ["見知らぬ人：\n「ベビーカーってちょっと邪魔なんだよね」","ひどい言葉にMPが削られた…\nMPが10減った！"],
-      ["通りすがりの人：\n「赤ちゃん、泣いてないですか〜？」","特に悪意はないが…\n気疲れした。MPが8減った！"],
-      ["謎の人：\n「もう少し小さいベビーカーにしたら？」","…うるさい！\nMPが12減った！"]
-    ];
-    var isHeal=Math.random()<0.45; // 45%回復、55%ダメージ
-    if(isHeal){
-      var pick=MYSTERY_HEAL[Math.floor(Math.random()*MYSTERY_HEAL.length)];
-      var healAmt=parseInt(pick[pick.length-1].match(/(\d+)/)[1]);
-      startSparkle(npc.x,npc.y);flash("#ffaadd");
-      showMsgs(pick,function(){changeMP(healAmt);G.dead[npc.id]=true;G.locked=false;clearMsg();});
-    } else {
-      var pick2=MYSTERY_ENEMY[Math.floor(Math.random()*MYSTERY_ENEMY.length)];
-      var dmgAmt=parseInt(pick2[pick2.length-1].match(/(\d+)/)[1]);
+    // IDと内容のマッピング
+    var MYSTERY_MAP={
+      // MAP0コンコース: 3人ネガティブ・2人回復
+      "mys_c1":{dmg:12, msg:"近づいた瞬間、無言で赤ちゃんの足を触ってきた。\n「やめてください」と言えなかった…\nMPが12減った！"},
+      "mys_c2":{dmg:10, msg:"「こんな小さいうちから外に出て大丈夫なの？\nうちは半年は外出しなかったけど」\nそういう話、聞いてない。MPが10減った！"},
+      "mys_c3":{dmg:15, msg:"「赤ちゃんって寒がりだよ〜、その格好じゃかわいそう」\n今日の気温ちゃんと調べてきたんですが…\nMPが15減った！"},
+      "mys_c4":{hp:12,  msg:"「大変そうね、偉いね本当に」\nすれ違いざまに声をかけてくれた。\nMPが12回復した！"},
+      "mys_c5":{hp:15,  msg:"「段差あるから、ベビーカー持ち上げますね！」\n若い人が走って来てくれた。\n温かくてMPが15回復した！"},
+
+      // MAP_PLATFORMホーム: ランダム（登場はおまけ扱い）
+      "mys_p1":{dmg:10, msg:"「母乳？ミルク？」\n…なんで他人のあなたに報告しないといけないの。\nMPが10減った！"},
+      "mys_p2":{hp:10,  msg:"「赤ちゃんかわいいね、何ヶ月？」\nなんか救われた。\nMPが10回復した！"},
+      "mys_p3":{dmg:8,  msg:"「赤ちゃん、ママに全然似てないね〜！」\n悪意はないんだろうけど…\nじわじわMPが8減った！"},
+
+      // MAP2海老反駅: 2人ネガティブ・2人回復
+      "mys_b1":{dmg:15, msg:"「あんた、妊婦？それとも健常者？」\nいったい何の確認だろう。MPが15減った！"},
+      "mys_b2":{dmg:12, msg:"「かわいい〜〜目は一重？二重なの？」\nどっちでもいい。MPが12減った！"},
+      "mys_b3":{hp:12,  msg:"「赤ちゃん、にこにこしてるね！ママが楽しそうだからかな」\nそんな一言がすごく嬉しかった。\nMPが12回復した！"},
+      "mys_b4":{hp:15,  msg:"「ベビーカー、エレベーター一緒に乗りますか？」\n親切な申し出にほっとした。\nMPが15回復した！"}
+    };
+
+    var entry=MYSTERY_MAP[npc.id];
+    if(!entry){G.locked=false;return;}
+
+    if(entry.dmg){
       flash("#f44");
-      showMsgs(pick2,function(){changeMP(-dmgAmt);G.dead[npc.id]=true;G.locked=false;clearMsg();});
+      showMsgs([entry.msg],function(){changeMP(-entry.dmg);G.dead[npc.id]=true;G.locked=false;clearMsg();});
+    } else {
+      startSparkle(npc.x,npc.y);flash("#ffaadd");
+      showMsgs([entry.msg],function(){changeMP(entry.hp);G.dead[npc.id]=true;G.locked=false;clearMsg();});
     }
     return;
   }
@@ -955,6 +965,21 @@ function handleElev(){
     G.locked=true;
     showMsgs(["まだ人が並んでいる…\n先に並んでいる人たちを\n待たないといけない。"],
       function(){G.locked=false;clearMsg();});
+    return;
+  }
+  // CONCOURSEのエレベーターに初めて乗るとき — 舌打ちした人と鉢合わせ
+  if(G.mapKey==="CONCOURSE"&&destKey==="PLATFORM"&&!G.elevWaited){
+    G.elevWaited=true;
+    G.locked=true;
+    showMsgs([
+      "エレベーターのドアが開いた。\n…さっき舌打ちしてきた人が\nまだ中にいる。",
+      "目が合った。ちょっと怖い…\nここは一回見送って\n次に乗ろう。",
+      "次のエレベーターを待った。\nドアが開く…乗り込もう！"
+    ], function(){
+      var dest=MAPS[destKey];
+      switchMap(destKey,dest.start.x,dest.start.y,
+        "エレベーターでホームに降りた！\n海老反駅行きの電車に乗ろう。");
+    });
     return;
   }
   if(!destKey){
@@ -1215,7 +1240,7 @@ function startGame(){
   G.mp=100;G.maxMp=100;G.facing=2;
   G.locked=false;G.msgDone=false;G.msgCb=null;
   G.dead={};G.trainTimer=null;G.gateUsed=false;
-  G.trainUsed=false;G.elevQueueDone=0;G.elevWaitTimer=null;G.rushDone=false;
+  G.trainUsed=false;G.elevQueueDone=0;G.elevWaitTimer=null;G.rushDone=false;G.elevWaited=false;
   // 待機列NPCの座標をリセット（ゲーム中にy座標が書き換えられるため）
   var npcs0=MAP0.npcs;
   for(var i=0;i<npcs0.length;i++){
