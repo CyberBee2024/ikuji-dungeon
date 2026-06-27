@@ -6,32 +6,32 @@
 <title>育児ダンジョン〜友人に会いに行こう編〜</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{width:100%;height:100%;background:#e8eef4;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;touch-action:none;}
-#app{position:relative;width:400px;display:flex;flex-direction:column;background:#fff;}
-#hud{flex-shrink:0;background:#fff;border-bottom:2px solid #b0c4d8;padding:4px 10px;display:flex;align-items:center;gap:8px;height:26px;}
-#hud-label{color:#1a3a5c;font-family:monospace;font-size:11px;white-space:nowrap;}
-#mp-bar-outer{flex:1;height:12px;background:#d0dde8;border:1.5px solid #7a9ab8;border-radius:2px;overflow:hidden;}
+html,body{width:100%;height:100%;background:#000;display:flex;justify-content:center;align-items:flex-start;overflow:hidden;touch-action:none;}
+#app{position:relative;width:400px;display:flex;flex-direction:column;background:#000;}
+#hud{flex-shrink:0;background:#000;border-bottom:2px solid #2a4a6a;padding:4px 10px;display:flex;align-items:center;gap:8px;height:26px;}
+#hud-label{color:#88ccff;font-family:monospace;font-size:11px;white-space:nowrap;}
+#mp-bar-outer{flex:1;height:12px;background:#111;border:1.5px solid #2a4a6a;border-radius:2px;overflow:hidden;}
 #mp-bar-inner{height:100%;background:#4caf50;width:100%;}
-#hud-val{color:#1a3a5c;font-family:monospace;font-size:11px;min-width:52px;text-align:right;}
-#game-area{flex-shrink:0;position:relative;overflow:hidden;background:#f0f4f8;}
+#hud-val{color:#88ccff;font-family:monospace;font-size:11px;min-width:52px;text-align:right;}
+#game-area{flex-shrink:0;position:relative;overflow:hidden;background:#000;}
 #game-canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 #sparkle-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:10;image-rendering:pixelated;}
 #msg-window{flex-shrink:0;background:#000;border-top:3px solid #000;padding:5px 8px;height:100px;}
 #msg-inner{border:2px solid #fff;width:100%;height:100%;padding:5px 7px;color:#fff;font-family:monospace;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-all;background:#000;}
 #msg-cursor{display:none;width:8px;height:11px;background:#fff;vertical-align:text-bottom;margin-left:2px;animation:blink .6s step-end infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-#dpad-area{flex-shrink:0;display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:46px 46px;gap:3px;padding:6px;justify-content:center;background:#e8eef4;border-top:2px solid #b0c4d8;height:106px;}
-.dbtn{background:#fff;border:2px solid #7a9ab8;color:#1a3a5c;font-size:20px;cursor:pointer;border-radius:5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
-.dbtn:active{background:#d0dde8;}
-#btn-a{background:#e8f4e8;border-color:#4caf50;color:#1a6a1a;font-size:11px;font-weight:700;font-family:monospace;}
+#dpad-area{flex-shrink:0;display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:46px 46px;gap:3px;padding:6px;justify-content:center;background:#000;border-top:2px solid #2a4a6a;height:106px;}
+.dbtn{background:#111;border:2px solid #2a4a6a;color:#88ccff;font-size:20px;cursor:pointer;border-radius:5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
+.dbtn:active{background:#1a2a3a;}
+#btn-a{background:#0a2a0a;border-color:#4caf50;color:#4caf50;font-size:11px;font-weight:700;font-family:monospace;}
 .dbtn-empty{border:none;background:transparent;pointer-events:none;}
 #flash{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity 0.15s;}
-#overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px;font-family:monospace;color:#1a3a5c;text-align:center;}
-#overlay h1{font-size:18px;color:#1a3a5c;margin-bottom:10px;line-height:1.5;border:2px solid #1a3a5c;padding:8px 16px;}
-#overlay .sub{font-size:11px;color:#3a6080;line-height:1.8;margin-bottom:18px;}
-.ov-btn{background:#fff;border:2px solid #1a3a5c;color:#1a3a5c;font-family:monospace;font-size:13px;font-weight:700;padding:10px 20px;cursor:pointer;margin:4px;width:100%;max-width:260px;display:block;}
-.ov-btn:hover,.ov-btn:active{background:#e8eef4;}
-.like-note{color:#1a3a5c;font-size:12px;font-family:monospace;margin-top:10px;line-height:1.6;border:1px solid #1a3a5c;padding:8px 12px;max-width:260px;width:100%;}
+#overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:20px;font-family:monospace;color:#88ccff;text-align:center;}
+#overlay h1{font-size:18px;color:#88ccff;margin-bottom:10px;line-height:1.5;border:2px solid #88ccff;padding:8px 16px;}
+#overlay .sub{font-size:11px;color:#5599bb;line-height:1.8;margin-bottom:18px;}
+.ov-btn{background:#000;border:2px solid #88ccff;color:#88ccff;font-family:monospace;font-size:13px;font-weight:700;padding:10px 20px;cursor:pointer;margin:4px;width:100%;max-width:260px;display:block;}
+.ov-btn:hover,.ov-btn:active{background:#111;}
+.like-note{color:#88ccff;font-size:12px;font-family:monospace;margin-top:10px;line-height:1.6;border:1px solid #88ccff;padding:8px 12px;max-width:260px;width:100%;}
 </style>
 </head>
 <body>
@@ -638,10 +638,10 @@ function render(){
   if(px2>=0&&px2<VCOLS&&py2>=0&&py2<VROWS) drawPlayer(px2*TILE,py2*TILE);
   // マップ名表示(空でなければ)
   if(map.name){
-    ctx.fillStyle="#1a3a5c";ctx.font="bold 10px monospace";ctx.textAlign="left";
+    ctx.font="bold 10px monospace";ctx.textAlign="left";
     var nameW=ctx.measureText(map.name).width+12;
-    ctx.fillStyle="rgba(255,255,255,0.82)";ctx.fillRect(0,0,nameW,16);
-    ctx.fillStyle="#1a3a5c";ctx.font="bold 10px monospace";ctx.textAlign="left";
+    ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(0,0,nameW,16);
+    ctx.fillStyle="#88ccff";ctx.font="bold 10px monospace";ctx.textAlign="left";
     ctx.fillText(map.name,4,11);
   }
 }
@@ -1210,7 +1210,7 @@ function endGame(result){
   overlayEl.innerHTML="";overlayEl.style.display="flex";
 
   var h1=document.createElement("h1");
-  h1.style.color=isWin?"#1a3a5c":"#cc2222";
+  h1.style.color=isWin?"#88ccff":"#ff4444";
   h1.innerHTML=isWin?"クリア！<br>海老反駅で友人に会えた！":"力尽きてしまった…";
 
   var p=document.createElement("div");p.className="sub";
